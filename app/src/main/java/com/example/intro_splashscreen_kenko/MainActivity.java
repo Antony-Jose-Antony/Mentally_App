@@ -1,56 +1,111 @@
 package com.example.intro_splashscreen_kenko;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private Button button, button1, button2;
+
+    EditText ed_email,ed_password;
+
+    String str_email,str_password;
+    String url = "https://plasmainda.000webhostapp.com/login.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
-        button = findViewById(R.id.btn2);
-        button1 = findViewById(R.id.sosbtn2);
-        button2 = findViewById(R.id.btn1);
-        button1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i2 = new Intent(MainActivity.this, sos_page.class);
-                startActivity(i2);
-            }
-        });
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i1 = new Intent(MainActivity.this, signup_activity.class);
-                startActivity(i1);
-            }
-        });
 
-
-        button2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i3 = new Intent(MainActivity.this, login_activity.class);
-                startActivity(i3);
-            }
-        });
-
-
+        ed_email = findViewById(R.id.ed_email);
+        ed_password = findViewById(R.id.ed_password);
     }
 
-    public void btn1(View view) {
-        EditText txt1 = findViewById(R.id.txtname1);
-        EditText txt2 = findViewById(R.id.txtname2);
-        String s1 = txt1.getText().toString();
-        String s2 = txt2.getText().toString();
+    public void Login(View view) {
+
+        if(ed_email.getText().toString().equals("")){
+            Toast.makeText(this, "Enter Email", Toast.LENGTH_SHORT).show();
+        }
+        else if(ed_password.getText().toString().equals("")){
+            Toast.makeText(this, "Enter Password", Toast.LENGTH_SHORT).show();
+        }
+        else{
+
+
+            final ProgressDialog progressDialog = new ProgressDialog(this);
+            progressDialog.setMessage("Please Wait..");
+
+            progressDialog.show();
+
+            str_email = ed_email.getText().toString().trim();
+            str_password = ed_password.getText().toString().trim();
+
+
+            StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    progressDialog.dismiss();
+
+                    if (!response.equals("Invalid Credentials")) {
+                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(MainActivity.this, login_activity.class));
+                        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
+                                .putString("str_email", str_email).apply();
+                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+                    }
+
+                }
+            },new Response.ErrorListener(){
+
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    progressDialog.dismiss();
+                    Toast.makeText(MainActivity.this, error.getMessage().toString(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            ){
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    Map<String,String> params = new HashMap<String, String>();
+                    params.put("email",str_email);
+                    params.put("password",str_password);
+                    return params;
+
+                }
+            };
+
+            RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
+            requestQueue.add(request);
+
+
+
+
+        }
     }
 
-
+    public void moveToRegistration(View view) {
+        startActivity(new Intent(getApplicationContext(),signup_activity.class));
+    }
 }

@@ -1,114 +1,120 @@
 package com.example.intro_splashscreen_kenko;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
-@SuppressWarnings("ALL")
+import java.util.HashMap;
+import java.util.Map;
+
 public class signup_activity extends AppCompatActivity {
 
-    private final int RC_SIGN_IN = 123;
-    Button bn1;
-    private GoogleSignInClient mGoogleSignInClient;
-    private FirebaseAuth mAuth;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            Intent intent = new Intent(getApplicationContext(), after_signup.class);
-            startActivity(intent);
-        }
-    }
+    EditText ed_username,ed_email,ed_password,city;
+    String str_name,str_email,str_password,str_city;
+    String url = "https://plasmainda.000webhostapp.com/register.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_signup);
-        Toast t1 = Toast.makeText(getApplicationContext(), "WELCOME TO KENKO", Toast.LENGTH_SHORT);
-        t1.show();
-        mAuth = FirebaseAuth.getInstance();
-        createRequest();
-        bn1 = findViewById(R.id.button6);
-        bn1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                signIn();
 
-            }
-        });
+        ed_email = findViewById(R.id.ed_email);
+        ed_username = findViewById(R.id.ed_username);
+        ed_password = findViewById(R.id.ed_password);
+
+
     }
 
-    private void createRequest() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+    public void moveToLogin(View view) {
+
+        startActivity(new Intent(getApplicationContext(),MainActivity.class));
+        finish();
     }
 
-    private void signIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN);
-    }
+    public void Register(View view) {
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Please Wait..");
 
-        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
-        if (requestCode == RC_SIGN_IN) {
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            try {
-                // Google Sign In was successful, authenticate with Firebase
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                firebaseAuthWithGoogle(account.getIdToken());
-            } catch (ApiException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                // Google Sign In failed, update UI appropriately
-            }
+
+        if(ed_username.getText().toString().equals("")){
+            Toast.makeText(this, "Enter Username", Toast.LENGTH_SHORT).show();
         }
+        else if(ed_email.getText().toString().equals("")){
+            Toast.makeText(this, "Enter Email", Toast.LENGTH_SHORT).show();
+        }
+        else if(ed_password.getText().toString().equals("")){
+            Toast.makeText(this, "Enter Password", Toast.LENGTH_SHORT).show();
+
+        }else{
+
+            progressDialog.show();
+            str_name = ed_username.getText().toString().trim();
+            str_email = ed_email.getText().toString().trim();
+            str_password = ed_password.getText().toString().trim();
+            //str_city = city.getText().toString().trim();
+
+
+            StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    progressDialog.dismiss();
+                    ed_username.setText("");
+                    ed_email.setText("");
+                    ed_password.setText("");
+                    //city.setText("");
+                    startActivity(new Intent(signup_activity.this, MainActivity.class));
+                    Toast.makeText(signup_activity.this, response, Toast.LENGTH_SHORT).show();
+                }
+            },new Response.ErrorListener(){
+
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    progressDialog.dismiss();
+                    Toast.makeText(signup_activity.this, error.getMessage().toString(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            ){
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    Map<String,String> params = new HashMap<String, String>();
+
+                    params.put("name",str_name);
+                    params.put("email",str_email);
+                    params.put("password",str_password);
+                    //params.put("city",str_city);
+                    return params;
+
+                }
+            };
+
+            RequestQueue requestQueue = Volley.newRequestQueue(signup_activity.this);
+            requestQueue.add(request);
+
+
+        }
+
     }
-
-
-    private void firebaseAuthWithGoogle(String idToken) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Intent intent = new Intent(getApplicationContext(), after_signup.class);
-                            startActivity(intent);
-                            // Sign in success, update UI with the signed-in user's information
-                            FirebaseUser user = mAuth.getCurrentUser();
-                        } else {
-                            Toast.makeText(signup_activity.this, "Sorry AUTHENTICATION Failed", Toast.LENGTH_SHORT);
-
-
-                            // If sign in fails, display a message to the user.
-                        }
-                    }
-                });
-    }
-
 }
+
